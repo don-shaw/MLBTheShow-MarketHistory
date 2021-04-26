@@ -1,7 +1,8 @@
 '''
 Title: MLB The Show Market History
 Purpose: This script will download your completed transactions from theshownation.com
-         It will also load your transactions into into a PostgreSQL database.
+         It will also load your transactions into into a PostgreSQL database if needed.
+         You can uncomment the function and variables in __main__ that writes results to your PostgreSQL instance if necessary
 '''
 
 from bs4 import BeautifulSoup
@@ -21,7 +22,7 @@ def process_market_history(csv_file, pages, browser_headers):
             for x in range(1, pages):
                 print(f'Processing page {x}')
 
-                r = requests.get(f'https://theshownation.com/mlb20/orders/completed_orders?page={x}&', headers=browser_headers)
+                r = requests.get(f'https://mlb21.theshow.com/orders/completed_orders?page={x}&', headers=browser_headers)
                 # print(r.url)
                 pagetext = r.text
                 soup = BeautifulSoup(pagetext, 'html.parser')
@@ -32,11 +33,11 @@ def process_market_history(csv_file, pages, browser_headers):
 
                 for i in index:
                     name = i.contents[1].text.strip()
-                    print(name)
                     purchase_type = i.contents[3].text.split(' ')[0].strip()
                     amount_i = i.contents[3].text.split(' ')[1].strip()
                     amount = amount_i[3:].strip()
                     time = i.contents[5].text
+                    print(f'{purchase_type} {name} for {amount} @ {time}')
                     market_file.writerow({'name': name, 'purchase_type': purchase_type, 'price': amount, 'time': time})
     except Exception as e:
         print(e)
@@ -70,13 +71,13 @@ if __name__ == '__main__':
 
     # Set the following variables
     market_csv = 'market_history.csv'
-    num_pages = 5
-    postgres_conn = 'postgresql+psycopg2://postgres:postgres@localhost:5433/show'
-    db_table = 'transactions'
+    num_pages = 1000
+    #postgres_conn = 'postgresql+psycopg2://postgres:postgres@localhost:5433/show?gssencmode=disable'
+    #db_table = 'transactions'
 
     # Go!
     print('processing market history...')
     process_market_history(market_csv, num_pages, headers)
 
-    print('processing sql table(s)...')
-    process_sql(postgres_conn, db_table, market_csv)
+    #print('processing sql table(s)...')
+    #process_sql(postgres_conn, db_table, market_csv)
